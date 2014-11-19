@@ -1,12 +1,19 @@
 import cv2
 import sys
+from codecardio import *
+from eventBasedAnimationClass import *
 
+#the code for face detection is from 
+#https://realpython.com/blog/python/face-detection-in-python-using-a-webcam/
 cascPath = sys.argv[1]
 faceCascade = cv2.CascadeClassifier(cascPath)
-
 video_capture = cv2.VideoCapture(0)
 
+#face detection code from website
+#https://realpython.com/blog/python/face-detection-in-python-using-a-webcam/
 while True:
+    #playCodeCardio()
+
     # Capture frame-by-frame
     ret, frame = video_capture.read()
 
@@ -23,7 +30,6 @@ while True:
     # Draw a rectangle around the faces
     for (x, y, w, h) in faces:
         cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-        print x , y
 
     # Display the resulting frame
     cv2.imshow('Video', frame)
