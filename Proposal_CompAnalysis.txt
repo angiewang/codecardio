@@ -1,4 +1,7 @@
 15-112 Term Project Deliverable 1
+
+www.github.com/angiewang/codecardio
+
 Project proposal
 	The term project will be a coding game that reinforces concepts taught in 15-112 while incentivizing physical exercise. This will be done by creating a user interface such that the location of the character in the game changes in response to the changes in the location of the user’s face. 
 	Using OpenCV, the location of the face will be detected with a webcam. Movements to the left will cause the character on the screen to the left, and vice versa for the opposite direction. Movements upward will cause the character on the screen upwards, and vice versa.
