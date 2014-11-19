@@ -18,12 +18,18 @@ class CodeCardio(EventBasedAnimationClass):
 	def checkForCollision(self):
 		for player in self.players:
 			for token in self.tokens:
-				if (player.x + player.r >= token.x - token.r
-					and player.y + player.r <= token.y + token.r
-					and player.y + player.r >= token.y - token.r):
-					print "collision"
-					self.question = "question"
-
+				#first check x constraint
+				if (player.x + player.r >= token.x - token.r):
+					if (player.y + player.r <= token.y + token.r
+					or player.y + player.r >= token.y - token.r):
+						print "collision"
+						self.question = "question"
+				elif player.x - player.r <= token.x + token.r:
+					if (player.y + player.r <= token.y + token.r
+					or player.y + player.r >= token.y - token.r):
+						print "collision"
+						self.question = "question"
+					
 	def generateQuestion(self, txt):
 		self.question = txt
 
