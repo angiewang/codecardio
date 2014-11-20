@@ -1,6 +1,6 @@
 from Tkinter import *
 from eventBasedAnimationClass import EventBasedAnimationClass
-import random
+import random, math
 
 class CodeCardio(EventBasedAnimationClass):
 	def __init__(self, winWidth=1000, winHeight=1000):
@@ -8,21 +8,26 @@ class CodeCardio(EventBasedAnimationClass):
 		self.height = winHeight
 		milliseconds = 1000
 		self.timerDelay = milliseconds
-		self.tokens = [Token(300, 600)]#, Token(400, 400), Token (500, 700)]
+		self.tokens = [Token(300, 600),Token(400, 400), Token (500, 700)]
 		self.players = [Player(200, 700)]
 		self.question=""
 		self.marginY = 100
 
 	#when collision occurs, generate random question 
 	def checkForCollision(self):
-		for player in self.players:
-			for token in self.tokens:
-				if (player.x + player.r >= token.x - token.r and 
-					player.y + player.r >= token.y - token.r):
-					self.question = "question"
+		player = self.players[0]
+		for token in self.tokens:
+			tx, ty, px, py = token.x, token.y, player.x, player.y
+			tr, pr = token.r, player.r
+			#there is a collision if the distance between the coordinates
+			#are less than the smaller of the two tokens' lengths
+			comparison = min(pr*2, tr*2)
+			if abs(px - tx) <= comparison and abs(py - ty) <= comparison:
+				print "collision detected"
+				self.question = "You hit a coding token! Answer this: what is the complexity of bubble sort?"
 		#todo - while question is incorrect, keep generating random questions
 
-	def generateQuestion(self, txt):
+	def generateQuestion(self, txt=""):
 		self.question = txt
 
 	def onTimerFired(self):
@@ -46,9 +51,8 @@ class CodeCardio(EventBasedAnimationClass):
 		self.canvas.delete(ALL)
 		self.generateQuestion(self.question)
 		self.drawQuestion()
-		#instantiate players
 		self.drawPlayers()
-		#instantiate tokens
+		self.drawTitleGraphics()
 		self.drawTokens()
 
 	def onKeyPressed(self,event):
@@ -58,8 +62,12 @@ class CodeCardio(EventBasedAnimationClass):
 		elif event.keysym == "Right": self.players[0].move(5, 0)
 		else: self.redrawAll()
 
+	def drawTitleGraphics(self):
+		x, y = self.width/2, self.marginY
+		self.canvas.create_text(x, y, text="CODE CARDIO", font="Helvetica 30 bold")
+
 class Character(object):
-	def __init__(self, x, y, r=50):
+	def __init__(self, x, y, r=25):
 		self.x = x
 		self.y = y
 		self.r = r
@@ -76,9 +84,10 @@ class Player(Character):
 class Token(Character):
 	def __init__(self, x, y, r=25):
 		super(Token, self).__init__(x, y, r)
-		self.color = "gold"
+		self.color = "yellow"
 
-class ExerciseToken(Character):
+
+class ExerciseToken(Token):
 	def __init__(self, x, y, r=25):
 		super(ExerciseToken, self).__init__(x, y, r)
 		self.color = "green"
