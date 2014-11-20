@@ -5,4 +5,6 @@ CodeCardio is a game that uses face movements to modify the location of the main
 Instructions to run:
 
 Go to the directory: /termproject/codecardio
-Run: python main.py haarcascade_frontalface_default.xml 
+
+python codecardio.py
+Eventually run: python main.py haarcascade_frontalface_default.xml when face movements are compatible with the game

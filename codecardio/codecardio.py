@@ -17,17 +17,9 @@ class CodeCardio(EventBasedAnimationClass):
 	def checkForCollision(self):
 		for player in self.players:
 			for token in self.tokens:
-				#first check x constraint
-				if (player.x + player.r >= token.x - token.r):
-					if (player.y + player.r <= token.y + token.r
-					or player.y + player.r >= token.y - token.r):
-						print "collision"
-						self.question = "question"
-				elif player.x - player.r <= token.x + token.r:
-					if (player.y + player.r <= token.y + token.r
-					or player.y + player.r >= token.y - token.r):
-						print "collision"
-						self.question = "question"
+				if (player.x + player.r >= token.x - token.r and 
+					player.y + player.r >= token.y - token.r):
+					self.question = "question"
 		#todo - while question is incorrect, keep generating random questions
 
 	def generateQuestion(self, txt):
@@ -88,7 +80,7 @@ class Token(Character):
 
 class ExerciseToken(Character):
 	def __init__(self, x, y, r=25):
-		super(ExerciseToken, self).__init__(x, y, r):
+		super(ExerciseToken, self).__init__(x, y, r)
 		self.color = "green"
 
 def playCodeCardio():
