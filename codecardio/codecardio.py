@@ -16,6 +16,8 @@ class CodeCardio(EventBasedAnimationClass):
 		self.topBoardLength = winHeight/4
 		self.tokenHit = False
 		self.timerDelay = 1000
+		self.codingTokenHit = False
+		self.exerciseTokenHit = False
 
 	#when collision occurs, generate random question 
 	def checkForCollision(self):
@@ -28,7 +30,14 @@ class CodeCardio(EventBasedAnimationClass):
 			comparison = min(tr, pr)*2
 			if abs(px - tx) <= comparison and abs(py - ty) <= comparison:
 				print "collision detected"
-				self.question = "You hit a coding token! Answer this: what is the complexity of bubble sort?"
+				if type(token)==Token:
+					self.codingTokenHit = True
+					#GENERATE QUESTION
+					self.question = "You hit a coding token! Answer this: what is the complexity of bubble sort?"
+				else:
+					self.exerciseTokenHit = True
+					#GENERATE EXERCISE TOKEN
+					self.question = "DO 10 PUSHUPS"
 		#todo - while question is incorrect, keep generating random questions
 
 	def generateQuestion(self, txt=""):
@@ -36,7 +45,8 @@ class CodeCardio(EventBasedAnimationClass):
 
 	def onTimerFired(self):
 		self.checkForCollision() 
-		self.moveTokens()
+		if not self.codingTokenHit or self.exerciseTokenHit:
+			self.moveTokens()			
 
 	def drawPlayers(self):
 		for player in self.players:
@@ -50,14 +60,26 @@ class CodeCardio(EventBasedAnimationClass):
 
 	def moveTokens(self):
 		#randomly generate tokens
+		#first generate coding token
 		t = Token(0, self.topBoardLength)
 		x = random.randint(t.r, self.width)
 		t.move(x, t.r)
 		self.tokens.append(t)
+
+		#then generate exercise token
+		#TODO-need to check that they don't overlap
+		et = ExerciseToken(0, self.topBoardLength)
+		ex = random.randint(et.r, self.width)
+		et.move(ex, et.r)
+		self.tokens.append(et)
+
 		#then move them
 		for token in self.tokens: 
 			if token.y <= self.height - token.r:
-				token.y += self.moveStep * 10
+				scale = 10
+				step = self.moveStep * scale
+				token.y += step
+			else: self.tokens.remove(token) #reaches bottom of screen: remove
 
 	def initTopBoard(self):
 		self.canvas.create_rectangle(0,0,self.width, self.topBoardLength, fill="peach puff")
@@ -82,10 +104,11 @@ class CodeCardio(EventBasedAnimationClass):
 		self.drawTokens()
 
 	def onKeyPressed(self,event):
-		if event.keysym == "Up": self.players[0].move(0, -5)
-		elif event.keysym == "Down": self.players[0].move(0, 5)
-		elif event.keysym == "Left": self.players[0].move(-5, 0)
-		elif event.keysym == "Right": self.players[0].move(5, 0)
+		move = self.moveStep
+		if event.keysym == "Up": self.players[0].move(0, -1 * move)
+		elif event.keysym == "Down": self.players[0].move(0, move)
+		elif event.keysym == "Left": self.players[0].move(-1 * move, 0)
+		elif event.keysym == "Right": self.players[0].move(move, 0)
 		else: self.redrawAll()
 
 	def drawTitleGraphics(self):
@@ -111,7 +134,7 @@ class Character(object):
 class Player(Character):
 	def __init__(self, x, y):
 		super(Player,self).__init__(x, y)
-		self.color = "sky blue"
+		self.color = "cyan"
 
 class Token(Character):
 	def __init__(self, x, y):
