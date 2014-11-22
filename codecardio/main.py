@@ -12,7 +12,7 @@ video_capture = cv2.VideoCapture(0)
 #face detection code from website
 #https://realpython.com/blog/python/face-detection-in-python-using-a-webcam/
 while True:
-    #playCodeCardio()
+    playCodeCardio()
 
     # Capture frame-by-frame
     ret, frame = video_capture.read()
