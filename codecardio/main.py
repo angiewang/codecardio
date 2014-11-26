@@ -1,6 +1,6 @@
 import cv2
 import sys
-from codecardio import *
+#from codecardio import *
 from eventBasedAnimationClass import *
 
 #the code for face detection is from 
@@ -12,7 +12,7 @@ video_capture = cv2.VideoCapture(0)
 #face detection code from website
 #https://realpython.com/blog/python/face-detection-in-python-using-a-webcam/
 while True:
-    playCodeCardio()
+    #playCodeCardio()
 
     # Capture frame-by-frame
     ret, frame = video_capture.read()

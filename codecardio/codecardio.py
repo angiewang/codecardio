@@ -1,6 +1,6 @@
 from Tkinter import *
 from eventBasedAnimationClass import EventBasedAnimationClass
-import random, math
+import random, math, sys, os
 
 class CodeCardio(EventBasedAnimationClass):
 	def __init__(self, winWidth=1000, winHeight=1000):
@@ -18,6 +18,10 @@ class CodeCardio(EventBasedAnimationClass):
 		self.timerDelay = 1000
 		self.codingTokenHit = False
 		self.exerciseTokenHit = False
+		self.exercise = "" #represents the current workout when token is hit
+		self.currentTopic = ""
+
+	def initAnimation(self): pass
 
 	#when collision occurs, generate random question 
 	def checkForCollision(self):
@@ -29,26 +33,57 @@ class CodeCardio(EventBasedAnimationClass):
 			#are less than the smaller of the two tokens' lengths
 			comparison = min(tr, pr)*2
 			if abs(px - tx) <= comparison and abs(py - ty) <= comparison:
-				print "collision detected"
+				#print "collision detected"
 				if type(token)==Token:
 					self.codingTokenHit = True
-					#GENERATE QUESTION
-					self.question = "You hit a coding token! Answer this: what is the complexity of bubble sort?"
+					self.generateQuestion()
 				else:
 					self.exerciseTokenHit = True
-					#GENERATE EXERCISE TOKEN
-					self.question = "DO 10 PUSHUPS"
+					self.generateExercise()
 		#todo - while question is incorrect, keep generating random questions
 
-	def generateQuestion(self, txt=""):
-		self.question = txt
+	#generates the question when coding token is hit
+	def generateQuestion(self): pass
+		#get current topic
+		#then display the contents of the file. 
+		#value of the topics dictionary: file location of question
 
+	def getCurrentTopic(self): pass
+	#store a dictionary of topics and a list of the files of all their 
+	#return the file location of the 
+
+	#generates the workout when exercise token is hit
+	def generateExercise(self):
+		numberOfExercises = [5, 10, 20]
+		num = numberOfExercises[random.randint(0, len(numberOfExercises)-1)]
+		exercises = ["PUSHUPS", "SITUPS", "JUMPING JACKS", "SQUATS", "LUNGES"]
+		exercise = exercises[random.randint(0, len(exercises)-1)]
+		self.exercise = "DO %d %s" % (num, exercise)
+
+	def drawCurrentExercise(self):
+		margin = self.marginX
+		if self.codingTokenHit:	
+			y = self.marginY * 2
+			self.canvas.create_text(self.width/2, self.topBoardLength/2 + self.marginY, 
+				text="Answer the following question", 
+			font="Helvetica 20 bold", fill="black")
+			self.canvas.create_rectangle(0+margin, self.topBoardLength+margin, 
+				self.width-margin, self.height-margin, fill="white")
+		elif self.exerciseTokenHit:
+			self.canvas.create_rectangle(0+margin, self.topBoardLength+margin, 
+				self.width-margin, self.height-margin, fill="white")
+			self.canvas.create_text(self.width/2, self.height/2, text=self.exercise,
+				font="Helvetica 40 bold")
+
+	def answerQuestion(self, event):
+		print "answer question"
+		
 	def onTimerFired(self):
-		self.checkForCollision() 
-		if not self.codingTokenHit or self.exerciseTokenHit:
-			self.moveTokens()			
+		if self.codingTokenHit==False and self.exerciseTokenHit==False:
+			self.checkForCollision() 
+			self.moveTokens()
 
-	def drawPlayers(self):
+	def drawPlayers(self): 
 		for player in self.players:
 			self.canvas.create_oval(player.x-player.r, player.y-player.r, 
 				player.x+player.r, player.y+player.r, fill=player.color)
@@ -62,7 +97,7 @@ class CodeCardio(EventBasedAnimationClass):
 		#randomly generate tokens
 		#first generate coding token
 		t = Token(0, self.topBoardLength)
-		x = random.randint(t.r, self.width)
+		x = random.randint(t.r, self.width) 
 		t.move(x, t.r)
 		self.tokens.append(t)
 
@@ -82,44 +117,43 @@ class CodeCardio(EventBasedAnimationClass):
 			else: self.tokens.remove(token) #reaches bottom of screen: remove
 
 	def initTopBoard(self):
-		self.canvas.create_rectangle(0,0,self.width, self.topBoardLength, fill="peach puff")
-
-	def initAnimation(self):
-		#set background and scene
-		self.initTopBoard()
-
-	def drawQuestion(self):
-		y = self.marginY * 2
-		self.canvas.create_text(self.width/2, self.topBoardLength/2 + self.marginY, text=self.question, 
-			font="Helvetica 20 bold", fill="black")
+		self.canvas.create_rectangle(0,0,self.width, self.topBoardLength, fill="light cyan")
 
 	def redrawAll(self):
 		self.canvas.delete(ALL)
-		#background
+		self.initTopBoard()
+		#set scene background
 		self.canvas.create_rectangle(0, self.topBoardLength, self.width, self.height, fill="black")
-		self.generateQuestion(self.question)
-		self.drawQuestion()
-		self.drawPlayers()
+		if not self.codingTokenHit and not self.exerciseTokenHit:
+			self.drawPlayers()
+			self.drawTokens()
+		else:
+			self.drawCurrentExercise()
 		self.drawTitleGraphics()
-		self.drawTokens()
-
+		
 	def onKeyPressed(self,event):
 		move = self.moveStep
-		if event.keysym == "Up": self.players[0].move(0, -1 * move)
-		elif event.keysym == "Down": self.players[0].move(0, move)
-		elif event.keysym == "Left": self.players[0].move(-1 * move, 0)
+		if event.keysym == "Left": self.players[0].move(-1 * move, 0)
 		elif event.keysym == "Right": self.players[0].move(move, 0)
+		if self.codingTokenHit:
+			self.answerQuestion(event)
 		else: self.redrawAll()
 
 	def drawTitleGraphics(self):
-		x, y = self.width/2, self.marginY
-		self.canvas.create_text(self.marginX, self.marginY + self.topBoardLength,
-		 text="Score: 0", font="Helvetica 30 bold", fill="white")
-		if self.tokenHit==True:
-			print "token is hit. display something on screen"
-		else:
-			self.canvas.create_text(self.width/2, self.topBoardLength/2,
-				text="CODE CARDIO", font="Helvetica 40 bold")
+		if not self.codingTokenHit and not self.exerciseTokenHit:
+			displayText = "CODE CARDIO"
+			directions = "Dodge the falling tokens"
+			self.canvas.create_text(self.width/2, self.topBoardLength/2+self.marginY,
+			text=directions, font="Didot 25")
+		elif self.codingTokenHit == True:
+			displayText = "YOU HIT A CODING TOKEN"
+			title = "Current topic: " + self.currentTopic
+			self.canvas.create_text(self.width/2, self.marginY+self.topBoardLength,
+		 text=title, font="Palatino 30 bold", fill="white")
+		elif self.exerciseTokenHit == True:
+			displayText = "YOU HIT AN EXERCISE TOKEN"
+		self.canvas.create_text(self.width/2, self.topBoardLength/2,
+				text=displayText, font="Andale\ Mono 60 bold")
 
 class Character(object):
 	def __init__(self, x, y):
@@ -128,7 +162,7 @@ class Character(object):
 		self.r = 30
 
 	def move(self, dX, dY):
-		self.x += dX
+		self.x += dX 
 		self.y += dY
 
 class Player(Character):
