@@ -10,7 +10,6 @@ class CodeCardio(EventBasedAnimationClass):
 		self.timerDelay = 1
 		self.tokens = []
 		self.players = [Player(500, 600)]
-		self.question=""
 		self.marginY, self.marginX = 50, 75
 		self.moveStep = 5
 		self.topBoardLength = winHeight/4
@@ -18,10 +17,21 @@ class CodeCardio(EventBasedAnimationClass):
 		self.timerDelay = 1000
 		self.codingTokenHit = False
 		self.exerciseTokenHit = False
-		self.exercise = "" #represents the current workout when token is hit
-		self.currentTopic = ""
+		self.exercise = "" #represents the current workout when exercise token hit
+		self.question= "" #represents current question when coding token hit
+		self.currentTopic = 0
+		self.topics = []
+		self.fileLocs = dict()
+		self.questionInstructions = ""
+		self.responseToQuestion = ""
+		self.answers=[]
+		self.correctAnswer = None
+		self.ansChoices=dict()
+		self.tryAgain = False
+		self.directions = ""
 
-	def initAnimation(self): pass
+	def initAnimation(self):
+		self.initTopics()
 
 	#when collision occurs, generate random question 
 	def checkForCollision(self):
@@ -42,15 +52,45 @@ class CodeCardio(EventBasedAnimationClass):
 					self.generateExercise()
 		#todo - while question is incorrect, keep generating random questions
 
-	#generates the question when coding token is hit
-	def generateQuestion(self): pass
-		#get current topic
-		#then display the contents of the file. 
-		#value of the topics dictionary: file location of question
+	def testCheckForCollision(): pass
 
-	def getCurrentTopic(self): pass
-	#store a dictionary of topics and a list of the files of all their 
-	#return the file location of the 
+	@staticmethod
+	def readFile(filename, mode="rt"):
+		with open(filename, mode) as fin:
+			return fin.read()
+
+	#generates the question when coding token is hit
+	def generateQuestion(self):
+		#get current topic
+		topic = self.topics[self.currentTopic]
+		#readFile(self.fileLocs[topic][0])
+		filename = self.fileLocs[topic][0]
+		mode = "rt"
+		with open(filename, mode) as fin:
+			question = fin.read()
+		self.question =  question
+		self.generateMCAnswers()
+
+		#randomly generate numeric values to substitute into template
+
+	def initTopics(self):
+		self.topics = ["Programming basics", "Conditionals- and loops",
+		"Strings", "Lists", "Efficiency", "Sorting algorithms", "Sets",
+		"Maps and dictionaries", "Graphics", "Object oriented programming",
+		"Recursion", "Functions redux", "File IO"]
+		self.fileLocs = {"Programming basics": ["questions/basics"], 
+				"Conditionals and Loops": ["questions/loops"],
+				"Strings": ["questions/strings"], 
+				"Lists" : ["questions/lists"],
+				"Efficiency" : ["questions/"],
+				"Sorting algorithms": ["questions/sorting"],
+				"Sets" : ["questions/sets"],
+				"Maps and dictionaries" : ["questions/maps"],
+				"Graphics" : ["questions/graphics"],
+				"Object oriented programming" : ["questions/oop"],
+				"Recursion" : ["questions/recursion"],
+				"Functions redux" : ["questions/functionsredux"],
+				"File IO" : ["questions/fileio"]}
 
 	#generates the workout when exercise token is hit
 	def generateExercise(self):
@@ -60,23 +100,61 @@ class CodeCardio(EventBasedAnimationClass):
 		exercise = exercises[random.randint(0, len(exercises)-1)]
 		self.exercise = "DO %d %s" % (num, exercise)
 
+	def generateMCAnswers(self):
+		#todo - randomize
+		self.answers = [10, 4, 3, 2]
+		self.ansChoices=["a", "b", "c", "d"]
+		self.correctAnswer = 10
+		print self.correctAnswer
+
 	def drawCurrentExercise(self):
 		margin = self.marginX
 		if self.codingTokenHit:	
-			y = self.marginY * 2
-			self.canvas.create_text(self.width/2, self.topBoardLength/2 + self.marginY, 
-				text="Answer the following question", 
-			font="Helvetica 20 bold", fill="black")
+			x = self.width/2
+			y = self.height/2
+			if not self.tryAgain:
+				self.questionInstructions = "Enter the letter that corresponds to the correct answer"
+			self.canvas.create_text(x, self.topBoardLength/2 + self.marginY, 
+				text=self.questionInstructions, 
+			font="Helvetica 20 bold")
 			self.canvas.create_rectangle(0+margin, self.topBoardLength+margin, 
 				self.width-margin, self.height-margin, fill="white")
+			self.canvas.create_text(self.width/2, y,
+				text=self.question, font="Helvetica 20 bold")
+			y += self.marginY
+			for a in xrange(len(self.answers)):
+				y += self.marginY
+				self.canvas.create_text(x, y, 
+					text=self.ansChoices[a] + "):" + str(self.answers[a]),
+				font="Helvetica 20 bold")
+
 		elif self.exerciseTokenHit:
 			self.canvas.create_rectangle(0+margin, self.topBoardLength+margin, 
 				self.width-margin, self.height-margin, fill="white")
 			self.canvas.create_text(self.width/2, self.height/2, text=self.exercise,
 				font="Helvetica 40 bold")
+			self.canvas.create_text(self.width/2, self.height/2 + self.marginY, 
+				text="Press enter when finished", font="Helvetica 20 bold")
 
-	def answerQuestion(self, event):
-		print "answer question"
+	def answerQuestion(self, event): 
+		if event.char in {"a", "b", "c", "d"}:
+			self.responseToQuestion = event.char
+			#question is answered correctly
+			index = self.ansChoices.index(self.responseToQuestion)
+			if self.answers[index]==self.correctAnswer:
+				self.codingTokenHit = False
+				self.tokens = []
+				self.directions = "Correct!"
+			#question is incorrect, try again
+			else:
+				self.tryAgain = True
+				self.questionInstructions = "INCORRECT - try again"
+
+	def exerciseResponse(self,event):
+		if event.keysym =="Return":
+			#reset game
+			self.exerciseTokenHit = False
+			self.tokens = []
 		
 	def onTimerFired(self):
 		if self.codingTokenHit==False and self.exerciseTokenHit==False:
@@ -123,7 +201,7 @@ class CodeCardio(EventBasedAnimationClass):
 		self.canvas.delete(ALL)
 		self.initTopBoard()
 		#set scene background
-		self.canvas.create_rectangle(0, self.topBoardLength, self.width, self.height, fill="black")
+		self.canvas.create_rectangle(0, self.topBoardLength, self.width, self.height, fill="gray10")
 		if not self.codingTokenHit and not self.exerciseTokenHit:
 			self.drawPlayers()
 			self.drawTokens()
@@ -136,18 +214,21 @@ class CodeCardio(EventBasedAnimationClass):
 		if event.keysym == "Left": self.players[0].move(-1 * move, 0)
 		elif event.keysym == "Right": self.players[0].move(move, 0)
 		if self.codingTokenHit:
+			self.responseToQuestion = ""
 			self.answerQuestion(event)
+		elif self.exerciseTokenHit:
+			self.exerciseResponse(event)
 		else: self.redrawAll()
 
 	def drawTitleGraphics(self):
 		if not self.codingTokenHit and not self.exerciseTokenHit:
 			displayText = "CODE CARDIO"
-			directions = "Dodge the falling tokens"
+			self.directions = "Dodge the falling tokens"
 			self.canvas.create_text(self.width/2, self.topBoardLength/2+self.marginY,
-			text=directions, font="Didot 25")
+			text=self.directions, font="Didot 25")
 		elif self.codingTokenHit == True:
 			displayText = "YOU HIT A CODING TOKEN"
-			title = "Current topic: " + self.currentTopic
+			title = "Current topic: " + self.topics[self.currentTopic]
 			self.canvas.create_text(self.width/2, self.marginY+self.topBoardLength,
 		 text=title, font="Palatino 30 bold", fill="white")
 		elif self.exerciseTokenHit == True:

@@ -1,4 +1,4 @@
-# eventBasedAnimationClass.py
+# eventBasedAnimationClass.py from 112 course notes
 
 from Tkinter import *
 
@@ -50,5 +50,3 @@ class EventBasedAnimationClass(object):
         # and launch the app (This call BLOCKS, so your program waits
         # until you close the window!)
         self.root.mainloop()
-
-# EventBasedAnimationClass(300,300).run()
