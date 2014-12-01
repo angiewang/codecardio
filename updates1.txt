@@ -1,0 +1,12 @@
+Game has basic working features:
+- exercise token screen shows up. 
+- coding question screen and template generated
+- resets on completion of coding question or exercise
+- displays text when game is complete
+
+Todo:
+- get template to be randomly generated using string formatting
+- complete all templates for curriculum
+- progress bar
+- face movement
+- better graphics

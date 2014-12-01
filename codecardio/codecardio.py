@@ -64,33 +64,40 @@ class CodeCardio(EventBasedAnimationClass):
 		#get current topic
 		topic = self.topics[self.currentTopic]
 		#readFile(self.fileLocs[topic][0])
-		filename = self.fileLocs[topic][0]
+		filename = self.fileLocs[topic][0][0]
 		mode = "rt"
 		with open(filename, mode) as fin:
 			question = fin.read()
-		self.question =  question
+		a,b,c,d,e = 2,7,1,9,13
+		self.question = question % (a,b,c,d,e)
 		self.generateMCAnswers()
 
 		#randomly generate numeric values to substitute into template
 
 	def initTopics(self):
-		self.topics = ["Programming basics", "Conditionals- and loops",
-		"Strings", "Lists", "Efficiency", "Sorting algorithms", "Sets",
+		self.topics = ["Programming basics", "Conditionals and Loops",
+		"Strings", "Lists", #"Efficiency", 
+		"Sorting algorithms", "Sets",
 		"Maps and dictionaries", "Graphics", "Object oriented programming",
 		"Recursion", "Functions redux", "File IO"]
-		self.fileLocs = {"Programming basics": ["questions/basics"], 
-				"Conditionals and Loops": ["questions/loops"],
-				"Strings": ["questions/strings"], 
-				"Lists" : ["questions/lists"],
-				"Efficiency" : ["questions/"],
-				"Sorting algorithms": ["questions/sorting"],
-				"Sets" : ["questions/sets"],
-				"Maps and dictionaries" : ["questions/maps"],
-				"Graphics" : ["questions/graphics"],
-				"Object oriented programming" : ["questions/oop"],
-				"Recursion" : ["questions/recursion"],
-				"Functions redux" : ["questions/functionsredux"],
-				"File IO" : ["questions/fileio"]}
+		self.fileLocs = {"Programming basics": [("questions/basics.py", "questions/basicsA.py")], 
+		"Conditionals and Loops": [("questions/loops.py", "questions/loopsA.py")],
+		"Strings": [("questions/strings.py", "questions/stringsA.py")], 
+		"Lists" : [("questions/lists.py", "questions/listsA.py")],
+		#"Efficiency" : [("questions/efficiency.py", "questions/efficiencyA.py")],
+		"Sorting algorithms": [("questions/sorting.py", "questions/sortingA.py")],
+		"Sets" : [("questions/sets.py", "questions/setsA.py")],
+		"Maps and dictionaries" : [("questions/maps.py", "questions/mapsA.py")],
+		"Graphics" : [("questions/graphics.py", "questions/graphicsA.py")],
+		"Object oriented programming" : [("questions/oop.py","questions/oopA.py")],
+		"Recursion" : [("questions/recursion.py","questions/recursionA.py")],
+		"Functions redux" : [("questions/functionsredux.py","questions/functionsreduxA.py")],
+		"File IO" : [("questions/fileio.py", "questions/fileioA.py")]}
+
+	def gameIsOver(self): 
+		if self.currentTopic == len(self.topics):
+			self.create_text(self.width/2, self.height/2, 
+				text-"CONGRATS, game is complete")
 
 	#generates the workout when exercise token is hit
 	def generateExercise(self):
@@ -103,7 +110,7 @@ class CodeCardio(EventBasedAnimationClass):
 	def generateMCAnswers(self):
 		#todo - randomize
 		self.answers = [10, 4, 3, 2]
-		self.ansChoices=["a", "b", "c", "d"]
+		self.ansChoices = ["a", "b", "c", "d"]
 		self.correctAnswer = 10
 		print self.correctAnswer
 
@@ -113,15 +120,16 @@ class CodeCardio(EventBasedAnimationClass):
 			x = self.width/2
 			y = self.height/2
 			if not self.tryAgain:
-				self.questionInstructions = "Enter the letter that corresponds to the correct answer"
-			self.canvas.create_text(x, self.topBoardLength/2 + self.marginY, 
+				self.questionInstructions = "Enter the letter that corresponds to the correct answer."
+				self.questionInstructions+= "\nCode tracing: indicate what this program will print"
+			self.canvas.create_text(x, self.topBoardLength*3/4, 
 				text=self.questionInstructions, 
 			font="Helvetica 20 bold")
 			self.canvas.create_rectangle(0+margin, self.topBoardLength+margin, 
 				self.width-margin, self.height-margin, fill="white")
 			self.canvas.create_text(self.width/2, y,
 				text=self.question, font="Helvetica 20 bold")
-			y += self.marginY
+			y += self.marginY*3
 			for a in xrange(len(self.answers)):
 				y += self.marginY
 				self.canvas.create_text(x, y, 
@@ -132,7 +140,7 @@ class CodeCardio(EventBasedAnimationClass):
 			self.canvas.create_rectangle(0+margin, self.topBoardLength+margin, 
 				self.width-margin, self.height-margin, fill="white")
 			self.canvas.create_text(self.width/2, self.height/2, text=self.exercise,
-				font="Helvetica 40 bold")
+				font="Palatino 40 bold")
 			self.canvas.create_text(self.width/2, self.height/2 + self.marginY, 
 				text="Press enter when finished", font="Helvetica 20 bold")
 
@@ -142,9 +150,12 @@ class CodeCardio(EventBasedAnimationClass):
 			#question is answered correctly
 			index = self.ansChoices.index(self.responseToQuestion)
 			if self.answers[index]==self.correctAnswer:
+				#reset
 				self.codingTokenHit = False
 				self.tokens = []
 				self.directions = "Correct!"
+				self.tryAgain = False
+				self.currentTopic += 1
 			#question is incorrect, try again
 			else:
 				self.tryAgain = True
@@ -268,4 +279,5 @@ def playCodeCardio():
     #instantiate the first player
 	player1 = Player(random.randint(0, winWidth), random.randint(0, winHeight))
 
+#todo-create 
 playCodeCardio()
