@@ -1,6 +1,7 @@
 from Tkinter import *
 from eventBasedAnimationClass import EventBasedAnimationClass
-import random, math, sys, os
+import random, math, sys, os, subprocess
+from random import shuffle
 
 class CodeCardio(EventBasedAnimationClass):
 	def __init__(self, winWidth=1000, winHeight=1000):
@@ -61,16 +62,46 @@ class CodeCardio(EventBasedAnimationClass):
 
 	#generates the question when coding token is hit
 	def generateQuestion(self):
-		#get current topic
-		topic = self.topics[self.currentTopic]
-		#readFile(self.fileLocs[topic][0])
-		filename = self.fileLocs[topic][0][0]
-		mode = "rt"
-		with open(filename, mode) as fin:
-			question = fin.read()
-		a,b,c,d,e = 2,7,1,9,13
-		self.question = question % (a,b,c,d,e)
-		self.generateMCAnswers()
+		topic = self.topics[self.currentTopic] #ex: Programming basics
+		fileLoc = "questions/" + self.filelocs[self.currentTopic][0]+".py"
+		#ex: questions/basics.py
+		print fileLoc
+		question, answer = "", ""
+		if (os.path.exists(fileLoc)):
+			with open(fileLoc, mode="rt") as fin:
+				question = fin.read()
+				print question
+				a,b,c,d,e=2,7,1,9,13
+				
+				#todo - random replacements
+				# repl = []
+				# for r in xrange(self.filelocs[self.currentTopic][1]):
+				# 	repl += random.randomint(0, 10)
+
+				self.question = question % (a, b, c, d, e)
+				
+				#run the exec file and return answer 
+				index = 0
+				filename="questions/"+self.filelocs[self.currentTopic][0]+"_exec.py"
+				with open(filename, mode="wt") as fout:
+				    fout.write(self.question)
+				answer = subprocess.check_output("python "+filename, shell=True)
+				print "answer: " + str(answer)
+				self.generateMCAnswers(answer)
+
+	def generateMCAnswers(self, answer):
+		#create list of answers and shuffle them
+		self.correctAnswer = answer
+		self.answers = [self.correctAnswer]
+		print "self.answers: ", self.answers
+		self.ansChoices = ["a", "b", "c", "d"]
+		for a in xrange(len(self.ansChoices) - 1):
+			newAns = random.randint(0, int(answer))
+			if newAns not in self.answers:
+				print "ans", newAns
+				self.answers.append(newAns)
+		shuffle(self.answers)
+		print self.answers
 
 		#randomly generate numeric values to substitute into template
 
@@ -80,19 +111,9 @@ class CodeCardio(EventBasedAnimationClass):
 		"Sorting algorithms", "Sets",
 		"Maps and dictionaries", "Graphics", "Object oriented programming",
 		"Recursion", "Functions redux", "File IO"]
-		self.fileLocs = {"Programming basics": [("questions/basics.py", "questions/basicsA.py")], 
-		"Conditionals and Loops": [("questions/loops.py", "questions/loopsA.py")],
-		"Strings": [("questions/strings.py", "questions/stringsA.py")], 
-		"Lists" : [("questions/lists.py", "questions/listsA.py")],
-		#"Efficiency" : [("questions/efficiency.py", "questions/efficiencyA.py")],
-		"Sorting algorithms": [("questions/sorting.py", "questions/sortingA.py")],
-		"Sets" : [("questions/sets.py", "questions/setsA.py")],
-		"Maps and dictionaries" : [("questions/maps.py", "questions/mapsA.py")],
-		"Graphics" : [("questions/graphics.py", "questions/graphicsA.py")],
-		"Object oriented programming" : [("questions/oop.py","questions/oopA.py")],
-		"Recursion" : [("questions/recursion.py","questions/recursionA.py")],
-		"Functions redux" : [("questions/functionsredux.py","questions/functionsreduxA.py")],
-		"File IO" : [("questions/fileio.py", "questions/fileioA.py")]}
+	
+		#self.fileslocs = [filename, number of replacements, numTemplates]
+		self.filelocs = [("basics", 5, 1)]
 
 	def gameIsOver(self): 
 		if self.currentTopic == len(self.topics):
@@ -106,13 +127,6 @@ class CodeCardio(EventBasedAnimationClass):
 		exercises = ["PUSHUPS", "SITUPS", "JUMPING JACKS", "SQUATS", "LUNGES"]
 		exercise = exercises[random.randint(0, len(exercises)-1)]
 		self.exercise = "DO %d %s" % (num, exercise)
-
-	def generateMCAnswers(self):
-		#todo - randomize
-		self.answers = [10, 4, 3, 2]
-		self.ansChoices = ["a", "b", "c", "d"]
-		self.correctAnswer = 10
-		print self.correctAnswer
 
 	def drawCurrentExercise(self):
 		margin = self.marginX
@@ -133,7 +147,7 @@ class CodeCardio(EventBasedAnimationClass):
 			for a in xrange(len(self.answers)):
 				y += self.marginY
 				self.canvas.create_text(x, y, 
-					text=self.ansChoices[a] + "):" + str(self.answers[a]),
+					text=self.ansChoices[a] + "): " + str(self.answers[a]),
 				font="Helvetica 20 bold")
 
 		elif self.exerciseTokenHit:
