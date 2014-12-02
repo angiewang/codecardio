@@ -2,6 +2,7 @@ from Tkinter import *
 from eventBasedAnimationClass import EventBasedAnimationClass
 import random, math, sys, os, subprocess
 from random import shuffle
+from threading import *
 
 class CodeCardio(EventBasedAnimationClass):
 	def __init__(self, winWidth=1000, winHeight=1000):
@@ -31,8 +32,52 @@ class CodeCardio(EventBasedAnimationClass):
 		self.tryAgain = False
 		self.directions = ""
 
+	def faceDetect(self, arg):
+		#the code for face detection is from 
+		#https://realpython.com/blog/python/face-detection-in-python-using-a-webcam/
+		cascPath = sys.argv[1]
+		faceCascade = cv2.CascadeClassifier(cascPath)
+		video_capture = cv2.VideoCapture(0)
+
+		#face detection code from website
+		#https://realpython.com/blog/python/face-detection-in-python-using-a-webcam/
+		while True:
+		    #playCodeCardio()
+
+		    # Capture frame-by-frame
+		    ret, frame = video_capture.read()
+
+		    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+		    faces = faceCascade.detectMultiScale(
+		        gray,
+		        scaleFactor=1.1,
+		        minNeighbors=5,
+		        minSize=(30, 30),
+		        flags=cv2.cv.CV_HAAR_SCALE_IMAGE
+		    )
+
+		    # Draw a rectangle around the faces
+		    for (x, y, w, h) in faces:
+		        cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+		        print x, y
+
+		    # Display the resulting frame
+		    cv2.imshow('Video', frame)
+
+		    if cv2.waitKey(1) & 0xFF == ord('q'):
+		        break
+
+		# When everything is done, release the capture
+		video_capture.release()
+		cv2.destroyAllWindows()
+
+
 	def initAnimation(self):
-		self.initTopics()
+	    #create a new thread 
+	    thread = Thread(target=faceDetect, args=(haarcascade_frontalface_default.xml, ))
+	    thread.start()
+	    self.initTopics()
 
 	#when collision occurs, generate random question 
 	def checkForCollision(self):
@@ -63,7 +108,7 @@ class CodeCardio(EventBasedAnimationClass):
 	#generates the question when coding token is hit
 	def generateQuestion(self):
 		topic = self.topics[self.currentTopic] #ex: Programming basics
-		fileLoc = "questions/" + self.filelocs[self.currentTopic][0]+".py"
+		fileLoc = "questions/" + self.filelocs[self.currentTopic]+".py"
 		#ex: questions/basics.py
 		print fileLoc
 		question, answer = "", ""
@@ -71,24 +116,32 @@ class CodeCardio(EventBasedAnimationClass):
 			with open(fileLoc, mode="rt") as fin:
 				question = fin.read()
 				print question
-				a,b,c,d,e=2,7,1,9,13
-				
-				#todo - random replacements
-				# repl = []
-				# for r in xrange(self.filelocs[self.currentTopic][1]):
-				# 	repl += random.randomint(0, 10)
 
-				self.question = question % (a, b, c, d, e)
+				numRepl = question.count("%d")
+
+				low,high = 1,5 
+				repl = []
+				for randomRepl in xrange(numRepl):
+					repl.append(random.randint(low,high))
 				
+				repl = tuple(repl)
+				self.question = question % repl
+				#self.question = question
 				#run the exec file and return answer 
-				index = 0
-				filename="questions/"+self.filelocs[self.currentTopic][0]+"_exec.py"
-				with open(filename, mode="wt") as fout:
-				    fout.write(self.question)
-				answer = subprocess.check_output("python "+filename, shell=True)
+				
+				filename="questions/"+self.filelocs[self.currentTopic]+"_exec.py"
+				#get answer
+				if (os.path.exists(filename)):
+					with open(filename, mode="wt") as fout:
+					    fout.write(self.question)
+					answer = subprocess.check_output("python "+filename, shell=True)
+					
+				else:
+					print "create exec file for this topic"
 				print "answer: " + str(answer)
 				self.generateMCAnswers(answer)
 
+				
 	def generateMCAnswers(self, answer):
 		#create list of answers and shuffle them
 		self.correctAnswer = answer
@@ -96,10 +149,14 @@ class CodeCardio(EventBasedAnimationClass):
 		print "self.answers: ", self.answers
 		self.ansChoices = ["a", "b", "c", "d"]
 		for a in xrange(len(self.ansChoices) - 1):
-			newAns = random.randint(0, int(answer))
-			if newAns not in self.answers:
-				print "ans", newAns
-				self.answers.append(newAns)
+			if int(answer) == 0:
+				uppBound = 20 
+			else: uppBound = int(answer)
+			newAns = random.randint(0, uppBound-1)
+			while newAns in self.answers:
+				newAns = random.randint(0, uppBound-1)
+			print "ans", newAns
+			self.answers.append(newAns)
 		shuffle(self.answers)
 		print self.answers
 
@@ -112,8 +169,9 @@ class CodeCardio(EventBasedAnimationClass):
 		"Maps and dictionaries", "Graphics", "Object oriented programming",
 		"Recursion", "Functions redux", "File IO"]
 	
-		#self.fileslocs = [filename, number of replacements, numTemplates]
-		self.filelocs = [("basics", 5, 1)]
+		#this represents [filename.py, num of templates]
+		self.filelocs = ["basics", "loops"]
+		#todo - count number of replacements in template
 
 	def gameIsOver(self): 
 		if self.currentTopic == len(self.topics):

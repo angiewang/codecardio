@@ -8,4 +8,4 @@ def f(x,y):
             print "B",
         print (z if (z%3 == 2) else "C"),
     print
-f(12, 4)
+f(12,4)
