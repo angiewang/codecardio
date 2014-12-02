@@ -32,7 +32,7 @@ class CodeCardio(EventBasedAnimationClass):
 		self.tryAgain = False
 		self.directions = ""
 
-	def faceDetect(self, arg):
+	def faceDetect(self,arg):
 		#the code for face detection is from 
 		#https://realpython.com/blog/python/face-detection-in-python-using-a-webcam/
 		cascPath = sys.argv[1]
@@ -72,12 +72,11 @@ class CodeCardio(EventBasedAnimationClass):
 		video_capture.release()
 		cv2.destroyAllWindows()
 
-
 	def initAnimation(self):
-	    #create a new thread 
-	    thread = Thread(target=faceDetect, args=(haarcascade_frontalface_default.xml, ))
-	    thread.start()
-	    self.initTopics()
+		#create a new thread 
+		thread = Thread(target = self.faceDetect, args=("haarcascade_frontalface_default.xml",))
+		thread.start()
+		self.initTopics()
 
 	#when collision occurs, generate random question 
 	def checkForCollision(self):
@@ -105,6 +104,15 @@ class CodeCardio(EventBasedAnimationClass):
 		with open(filename, mode) as fin:
 			return fin.read()
 
+	def generateRepl(self,low,high,numRepl, question):
+		repl = []
+		for randomRepl in xrange(numRepl):
+			repl.append(random.randint(low,high))
+		repl = tuple(repl)
+		self.question = question % repl
+		#self.question = question
+		#run the exec file and return answer 
+
 	#generates the question when coding token is hit
 	def generateQuestion(self):
 		topic = self.topics[self.currentTopic] #ex: Programming basics
@@ -118,18 +126,12 @@ class CodeCardio(EventBasedAnimationClass):
 				print question
 
 				numRepl = question.count("%d")
-
-				low,high = 1,5 
-				repl = []
-				for randomRepl in xrange(numRepl):
-					repl.append(random.randint(low,high))
-				
-				repl = tuple(repl)
-				self.question = question % repl
-				#self.question = question
-				#run the exec file and return answer 
-				
-				filename="questions/"+self.filelocs[self.currentTopic]+"_exec.py"
+				if numRepl > 0:
+					self.generateRepl(1,5,numRepl,question)
+				try:	
+					filename="questions/"+self.filelocs[self.currentTopic]+"_exec.py"
+				except:
+					self.generateRepl(1,5, numRepl,question)
 				#get answer
 				if (os.path.exists(filename)):
 					with open(filename, mode="wt") as fout:
@@ -141,7 +143,6 @@ class CodeCardio(EventBasedAnimationClass):
 				print "answer: " + str(answer)
 				self.generateMCAnswers(answer)
 
-				
 	def generateMCAnswers(self, answer):
 		#create list of answers and shuffle them
 		self.correctAnswer = answer
@@ -199,6 +200,7 @@ class CodeCardio(EventBasedAnimationClass):
 			font="Helvetica 20 bold")
 			self.canvas.create_rectangle(0+margin, self.topBoardLength+margin, 
 				self.width-margin, self.height-margin, fill="white")
+
 			self.canvas.create_text(self.width/2, y,
 				text=self.question, font="Helvetica 20 bold")
 			y += self.marginY*3
