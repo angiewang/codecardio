@@ -1,7 +1,6 @@
 Angie Wang's term project for 15-112 Fall 2014
 
-CodeCardio is a game that reinforces the content learned in 15-112 while 
-encouraging exercise
+CodeCardio is a game that reinforces the content learned in 15-112 while encouraging exercise.
 
 Instructions to run:
 
