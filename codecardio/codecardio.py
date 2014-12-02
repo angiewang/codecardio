@@ -3,6 +3,7 @@ from eventBasedAnimationClass import EventBasedAnimationClass
 import random, math, sys, os, subprocess
 from random import shuffle
 from threading import *
+import cv2
 
 class CodeCardio(EventBasedAnimationClass):
 	def __init__(self, winWidth=1000, winHeight=1000):
@@ -31,19 +32,21 @@ class CodeCardio(EventBasedAnimationClass):
 		self.ansChoices=dict()
 		self.tryAgain = False
 		self.directions = ""
+		#create a new thread 
+		self.thread = Thread(target = self.faceDetect, args=("haarcascade_frontalface_default.xml",))
+		#thread.start()
 
 	def faceDetect(self,arg):
 		#the code for face detection is from 
 		#https://realpython.com/blog/python/face-detection-in-python-using-a-webcam/
-		cascPath = sys.argv[1]
+		#cascPath = sys.argv[1]
+		cascPath = arg
 		faceCascade = cv2.CascadeClassifier(cascPath)
 		video_capture = cv2.VideoCapture(0)
 
 		#face detection code from website
 		#https://realpython.com/blog/python/face-detection-in-python-using-a-webcam/
 		while True:
-		    #playCodeCardio()
-
 		    # Capture frame-by-frame
 		    ret, frame = video_capture.read()
 
@@ -73,9 +76,7 @@ class CodeCardio(EventBasedAnimationClass):
 		cv2.destroyAllWindows()
 
 	def initAnimation(self):
-		#create a new thread 
-		thread = Thread(target = self.faceDetect, args=("haarcascade_frontalface_default.xml",))
-		thread.start()
+		self.thread.start()
 		self.initTopics()
 
 	#when collision occurs, generate random question 
