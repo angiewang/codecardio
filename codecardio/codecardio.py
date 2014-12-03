@@ -37,14 +37,18 @@ class CodeCardio(EventBasedAnimationClass):
 		self.thread = Thread(target = self.faceDetect, args=("haarcascade_frontalface_default.xml",))
 		self.mousePX, self.mousePY = 0,0
 		self.timerCounter = 0
+		self.movementThreshold = 10
+		self.arg = "haarcascade_frontalface_default.xml"
+
+	def onWindowClosed(self):
+		self.video_capture.release()
+		#cv2.destroyAllWindows()
+		self.root.quit()
 
 	def initAnimation(self):
 		self.initStartScreen()
 		self.root.bind("<Motion>", lambda event: self.mouseMotion(event))
 		self.initTopics()
-		if self.startScreen == False:
-			self.thread.start()
-			#self.faceDetect("haarcascade_frontalface_default")
 
 	def initStartScreen(self):
 		#start screen init
@@ -52,40 +56,50 @@ class CodeCardio(EventBasedAnimationClass):
 		self.startScreenImage = None
 		self.mouseX, self.mouseY = 0,0
 
+	def initFaceDetect(self):
+		self.cascPath = self.arg
+		self.faceCascade = cv2.CascadeClassifier(self.cascPath)
+		self.video_capture = cv2.VideoCapture(0)
+
 	def faceDetect(self,arg):
 		#the code for face detection is from 
 		#https://realpython.com/blog/python/face-detection-in-python-using-a-webcam/
 		#cascPath = sys.argv[1]
-		cascPath = arg
-		faceCascade = cv2.CascadeClassifier(cascPath)
-		video_capture = cv2.VideoCapture(0)
+
+		#moved to init
+		# cascPath = arg
+		# faceCascade = cv2.CascadeClassifier(cascPath)
+		# video_capture = cv2.VideoCapture(0)
 
 		#face detection code from website
 		#https://realpython.com/blog/python/face-detection-in-python-using-a-webcam/
-		while True:
-		    # Capture frame-by-frame
-		    ret, frame = video_capture.read()
+		#while True:
+		    
+	    # Capture frame-by-frame
+		ret, frame = self.video_capture.read()
 
-		    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-		    faces = faceCascade.detectMultiScale(
-		        gray,
-		        scaleFactor=1.1,
-		        minNeighbors=5,
-		        minSize=(30, 30),
-		        flags=cv2.cv.CV_HAAR_SCALE_IMAGE
-		    )
+		faces = self.faceCascade.detectMultiScale(
+		    gray,
+		    scaleFactor=1.1,
+		    minNeighbors=5,
+		    minSize=(30, 30),
+		    flags=cv2.cv.CV_HAAR_SCALE_IMAGE
+		)
 
-		    # Draw a rectangle around the faces
-		    for (x, y, w, h) in faces:
-		        #cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-		        print x, y
-		        scale = 10
-		        step = self.moveStep * scale
-		        if x < self.width/2:
-		        	self.players[0].x -= step
-		        elif x > self.height/2:
-		        	self.players[0].x += step
+		# Draw a rectangle around the faces
+		for (x, y, w, h) in faces:
+		    #cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+		    print x, y
+		    scale = 100
+		    step = self.moveStep * scale
+		    if x < self.width/2:
+		    	print "move right"
+		    	self.players[0].x += step
+		    elif x > self.height/2:
+		    	print "move left"
+		    	self.players[0].x -= step
 
 		    # Display the resulting frame
 		   # cv2.imshow('Video', frame)
@@ -94,8 +108,8 @@ class CodeCardio(EventBasedAnimationClass):
 		    #     break
 
 		# When everything is done, release the capture
-		video_capture.release()
-		cv2.destroyAllWindows()
+		#video_capture.release()
+		#cv2.destroyAllWindows()
 
 	#when collision occurs, generate random question 
 	def checkForCollision(self):
@@ -161,8 +175,8 @@ class CodeCardio(EventBasedAnimationClass):
 		# 		print "answer: " + str(answer)
 		# 		self.generateMCAnswers(answer)
 		
-		if (os.path.exists(fileLoc)):
-			self.readFile()
+		# if (os.path.exists(fileLoc)):
+		# 	self.readFile()
 
 	def generateMCAnswers(self, answer):
 		#create list of answers and shuffle them
@@ -275,6 +289,10 @@ class CodeCardio(EventBasedAnimationClass):
 				self.generateExerciseToken()
 			self.moveTokens()
 
+			# print "begin thread"
+			# self.thread.start()
+			self.faceDetect("haarcascade_frontalface_default")
+
 	def drawPlayers(self): 
 		for player in self.players:
 			self.canvas.create_oval(player.x-player.r, player.y-player.r, 
@@ -305,7 +323,7 @@ class CodeCardio(EventBasedAnimationClass):
 	def moveTokens(self):
 		for token in self.tokens: 
 			if token.y <= self.height - token.r:
-				scale = 20
+				scale = 50
 				step = self.moveStep * scale
 				token.y += step
 			else: self.tokens.remove(token) #reaches bottom of screen: remove
@@ -355,6 +373,8 @@ class CodeCardio(EventBasedAnimationClass):
 		elif self.mousePX >= x-rx and self.mousePX <= x+rx and self.mousePY >= y-ry and self.mousePY <= y+ry:
 			print "start screen"
 			self.startScreen = False
+			self.initFaceDetect()
+			self.root.protocol("WM_DELETE_WINDOW", lambda: self.onWindowClosed())
 		#else:
 
 		self.canvas.create_rectangle(x-rx, y-ry, x+rx, y+ry, fill="blanched almond",
@@ -398,7 +418,7 @@ class CodeCardio(EventBasedAnimationClass):
 			self.drawTitleGraphics()
 		
 	def onKeyPressed(self,event):
-		scale = 20
+		scale = 100
 		move = self.moveStep * scale
 		if event.keysym == "Left": self.players[0].move(-1 * move, 0)
 		elif event.keysym == "Right": self.players[0].move(move, 0)
