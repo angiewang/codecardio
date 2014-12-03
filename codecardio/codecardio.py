@@ -39,6 +39,7 @@ class CodeCardio(EventBasedAnimationClass):
 		self.timerCounter = 0
 		self.movementThreshold = 10
 		self.arg = "haarcascade_frontalface_default.xml"
+		self.faceDetectFeature = True
 
 	def onWindowClosed(self):
 		self.video_capture.release()
@@ -95,10 +96,10 @@ class CodeCardio(EventBasedAnimationClass):
 		    scale = 100
 		    step = self.moveStep * scale
 		    if x < self.width/2:
-		    	print "move right"
+		    	print "move right",
 		    	self.players[0].x += step
 		    elif x > self.height/2:
-		    	print "move left"
+		    	print "move left",
 		    	self.players[0].x -= step
 
 		    # Display the resulting frame
@@ -136,22 +137,68 @@ class CodeCardio(EventBasedAnimationClass):
 		with open(filename, mode) as fin:
 			return fin.read()
 
+	def writeFile(self, filename, contents, mode="wt"):
+		with open(filename, mode) as fout:
+			fout.write(contents)
+
 	def generateRepl(self,low,high,numRepl, question):
 		repl = []
 		for randomRepl in xrange(numRepl):
 			repl.append(random.randint(low,high))
 		repl = tuple(repl)
 		self.question = question % repl
+		print self.question
 		#self.question = question
-		#run the exec file and return answer 
 
 	#generates the question when coding token is hit
 	def generateQuestion(self):
+		#get file location of topic
 		topic = self.topics[self.currentTopic] #ex: Programming basics
 		fileLoc = "questions/" + self.filelocs[self.currentTopic]+".py"
 		#ex: questions/basics.py
 		print fileLoc
-		question, answer = "", ""
+		question = self.readFile(fileLoc)
+		print question
+
+		numRepl = question.count("%d")
+
+		low,high = 1,5
+		self.generateRepl(low, high, numRepl, question)
+
+		#run the exec file and return answer 
+		execFile = "questions/" + self.filelocs[self.currentTopic] + "_exec.py"
+		self.writeFile(execFile, self.question)
+
+		#get answers
+		try:
+			answer = subprocess.check_output("python "+execFile, shell=True)
+		except:
+			print "regenerating repl and answers"
+			self.generateRepl(low,high,numRepl, question)
+			execFile = "questions/" + self.filelocs[self.currentTopic] + "_exec.py"
+			self.writeFile(execFile, self.question)
+
+		ansGen = False
+		while ansGen == False:
+			try:
+				answer = subprocess.check_output("python "+execFile, shell=True)
+				ansGen = True
+			except:
+				ansGen = False
+				print "regenerating question because not a valid file"
+				#regenerate random numbers
+				self.generateRepl(low, high, numRepl, question)
+				#re-execute
+				self.writeFile(execFile, self.question)
+
+		print "answer", answer
+		answer = answer.replace("\n","")
+		try:
+			answer = int(answer)
+		except:
+			print "answer is not integer"
+		self.generateMCAnswers(answer)
+
 		# if (os.path.exists(fileLoc)):
 		# 	with open(fileLoc, mode="rt") as fin:
 		# 		question = fin.read()
@@ -178,12 +225,21 @@ class CodeCardio(EventBasedAnimationClass):
 		# if (os.path.exists(fileLoc)):
 		# 	self.readFile()
 
+	def genRandomQuestion(self): pass
+
 	def generateMCAnswers(self, answer):
 		#create list of answers and shuffle them
 		self.correctAnswer = answer
 		self.answers = [self.correctAnswer]
 		print "self.answers: ", self.answers
 		self.ansChoices = ["a", "b", "c", "d"]
+		r = 4
+		low, high = answer - r, answer + r
+		for a in xrange(len(self.ansChoices)-1):
+			newAns = random.randint(low,high)
+			while newAns in self.answers:
+				newAns = random.randint(low,high)
+			self.answers.append(newAns)
 		# for a in xrange(len(self.ansChoices) - 1):
 		# 	if int(answer) == 0:
 		# 		uppBound = 20 
@@ -288,10 +344,8 @@ class CodeCardio(EventBasedAnimationClass):
 				self.generateCodingToken()
 				self.generateExerciseToken()
 			self.moveTokens()
-
-			# print "begin thread"
-			# self.thread.start()
-			self.faceDetect("haarcascade_frontalface_default")
+			if self.faceDetectFeature:
+				self.faceDetect("haarcascade_frontalface_default")
 
 	def drawPlayers(self): 
 		for player in self.players:
