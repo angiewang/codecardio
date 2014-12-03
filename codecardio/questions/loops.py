@@ -2,7 +2,7 @@ def f(x,y):
     m = 0
     for z in xrange(2,x,y):
         if (x%z == m):
-            print "A",
+            print "A", 
             m += 1
         elif (y + z > x):
             print "B",

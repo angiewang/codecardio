@@ -4,20 +4,21 @@ import random, math, sys, os, subprocess
 from random import shuffle
 from threading import *
 import cv2
+#from pygame import mixer
 
 class CodeCardio(EventBasedAnimationClass):
 	def __init__(self, winWidth=1000, winHeight=1000):
 		self.width = winWidth
 		self.height = winHeight
-		milliseconds = 1000
+		self.mainGame = False
 		self.timerDelay = 1
 		self.tokens = []
-		self.players = [Player(500, 600)]
+		self.prevX, self.prevY = 500, 400
+		self.players = [Player(500, 400)]
 		self.marginY, self.marginX = 50, 75
-		self.moveStep = 5
+		self.moveStep = 0.1
 		self.topBoardLength = winHeight/4
 		self.tokenHit = False
-		self.timerDelay = 1000
 		self.codingTokenHit = False
 		self.exerciseTokenHit = False
 		self.exercise = "" #represents the current workout when exercise token hit
@@ -34,7 +35,22 @@ class CodeCardio(EventBasedAnimationClass):
 		self.directions = ""
 		#create a new thread 
 		self.thread = Thread(target = self.faceDetect, args=("haarcascade_frontalface_default.xml",))
-		#thread.start()
+		self.mousePX, self.mousePY = 0,0
+		self.timerCounter = 0
+
+	def initAnimation(self):
+		self.initStartScreen()
+		self.root.bind("<Motion>", lambda event: self.mouseMotion(event))
+		self.initTopics()
+		if self.startScreen == False:
+			self.thread.start()
+			#self.faceDetect("haarcascade_frontalface_default")
+
+	def initStartScreen(self):
+		#start screen init
+		self.startScreen = True
+		self.startScreenImage = None
+		self.mouseX, self.mouseY = 0,0
 
 	def faceDetect(self,arg):
 		#the code for face detection is from 
@@ -62,22 +78,24 @@ class CodeCardio(EventBasedAnimationClass):
 
 		    # Draw a rectangle around the faces
 		    for (x, y, w, h) in faces:
-		        cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+		        #cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
 		        print x, y
+		        scale = 10
+		        step = self.moveStep * scale
+		        if x < self.width/2:
+		        	self.players[0].x -= step
+		        elif x > self.height/2:
+		        	self.players[0].x += step
 
 		    # Display the resulting frame
-		    cv2.imshow('Video', frame)
+		   # cv2.imshow('Video', frame)
 
-		    if cv2.waitKey(1) & 0xFF == ord('q'):
-		        break
+		    # if cv2.waitKey(1) & 0xFF == ord('q'):
+		    #     break
 
 		# When everything is done, release the capture
 		video_capture.release()
 		cv2.destroyAllWindows()
-
-	def initAnimation(self):
-		self.thread.start()
-		self.initTopics()
 
 	#when collision occurs, generate random question 
 	def checkForCollision(self):
@@ -96,12 +114,11 @@ class CodeCardio(EventBasedAnimationClass):
 				else:
 					self.exerciseTokenHit = True
 					self.generateExercise()
-		#todo - while question is incorrect, keep generating random questions
+		#todo - while question is incorrect, keep trying
 
 	def testCheckForCollision(): pass
 
-	@staticmethod
-	def readFile(filename, mode="rt"):
+	def readFile(self, filename, mode="rt"):
 		with open(filename, mode) as fin:
 			return fin.read()
 
@@ -121,28 +138,31 @@ class CodeCardio(EventBasedAnimationClass):
 		#ex: questions/basics.py
 		print fileLoc
 		question, answer = "", ""
-		if (os.path.exists(fileLoc)):
-			with open(fileLoc, mode="rt") as fin:
-				question = fin.read()
-				print question
+		# if (os.path.exists(fileLoc)):
+		# 	with open(fileLoc, mode="rt") as fin:
+		# 		question = fin.read()
+		# 		print question
 
-				numRepl = question.count("%d")
-				if numRepl > 0:
-					self.generateRepl(1,5,numRepl,question)
-				try:	
-					filename="questions/"+self.filelocs[self.currentTopic]+"_exec.py"
-				except:
-					self.generateRepl(1,5, numRepl,question)
-				#get answer
-				if (os.path.exists(filename)):
-					with open(filename, mode="wt") as fout:
-					    fout.write(self.question)
-					answer = subprocess.check_output("python "+filename, shell=True)
+		# 		numRepl = question.count("%d")
+		# 		if numRepl > 0:
+		# 			self.generateRepl(1,5,numRepl,question)
+		# 		try:	
+		# 			filename="questions/"+self.filelocs[self.currentTopic]+"_exec.py"
+		# 		except:
+		# 			self.generateRepl(1,5, numRepl,question)
+		# 		#get answer
+		# 		if (os.path.exists(filename)):
+		# 			with open(filename, mode="wt") as fout:
+		# 			    fout.write(self.question)
+		# 			answer = subprocess.check_output("python "+filename, shell=True)
 					
-				else:
-					print "create exec file for this topic"
-				print "answer: " + str(answer)
-				self.generateMCAnswers(answer)
+		# 		else:
+		# 			print "create exec file for this topic"
+		# 		print "answer: " + str(answer)
+		# 		self.generateMCAnswers(answer)
+		
+		if (os.path.exists(fileLoc)):
+			self.readFile()
 
 	def generateMCAnswers(self, answer):
 		#create list of answers and shuffle them
@@ -150,18 +170,17 @@ class CodeCardio(EventBasedAnimationClass):
 		self.answers = [self.correctAnswer]
 		print "self.answers: ", self.answers
 		self.ansChoices = ["a", "b", "c", "d"]
-		for a in xrange(len(self.ansChoices) - 1):
-			if int(answer) == 0:
-				uppBound = 20 
-			else: uppBound = int(answer)
-			newAns = random.randint(0, uppBound-1)
-			while newAns in self.answers:
-				newAns = random.randint(0, uppBound-1)
-			print "ans", newAns
-			self.answers.append(newAns)
+		# for a in xrange(len(self.ansChoices) - 1):
+		# 	if int(answer) == 0:
+		# 		uppBound = 20 
+		# 	else: uppBound = int(answer)
+		# 	newAns = random.randint(0, uppBound-1)
+		# 	while newAns in self.answers:
+		# 		newAns = random.randint(0, uppBound-1)
+		# 	print "ans", newAns
+		# 	self.answers.append(newAns)
 		shuffle(self.answers)
 		print self.answers
-
 		#randomly generate numeric values to substitute into template
 
 	def initTopics(self):
@@ -172,7 +191,9 @@ class CodeCardio(EventBasedAnimationClass):
 		"Recursion", "Functions redux", "File IO"]
 	
 		#this represents [filename.py, num of templates]
-		self.filelocs = ["basics", "loops"]
+		self.filelocs = ["basics", "loops", "strings", "lists", #"efficiency",
+		"sorting", "sets", "maps","graphics", "oop","recursion",
+		"functionsredux","fileio"]
 		#todo - count number of replacements in template
 
 	def gameIsOver(self): 
@@ -204,9 +225,9 @@ class CodeCardio(EventBasedAnimationClass):
 
 			self.canvas.create_text(self.width/2, y,
 				text=self.question, font="Helvetica 20 bold")
-			y += self.marginY*3
+			y += self.marginY*2
 			for a in xrange(len(self.answers)):
-				y += self.marginY
+				y += self.marginY/2
 				self.canvas.create_text(x, y, 
 					text=self.ansChoices[a] + "): " + str(self.answers[a]),
 				font="Helvetica 20 bold")
@@ -243,8 +264,15 @@ class CodeCardio(EventBasedAnimationClass):
 			self.tokens = []
 		
 	def onTimerFired(self):
-		if self.codingTokenHit==False and self.exerciseTokenHit==False:
+		if self.startScreen==False and self.codingTokenHit==False and self.exerciseTokenHit==False:
 			self.checkForCollision() 
+			#self.timerDelay = 1000
+			if self.timerCounter >= 0:
+				self.timerCounter -= 1
+			else:
+				self.timerCounter = 20
+				self.generateCodingToken()
+				self.generateExerciseToken()
 			self.moveTokens()
 
 	def drawPlayers(self): 
@@ -257,14 +285,8 @@ class CodeCardio(EventBasedAnimationClass):
 			self.canvas.create_rectangle(token.x-token.r, token.y-token.r, 
 				token.x+token.r, token.y+token.r, fill=token.color)
 
-	def moveTokens(self):
-		#randomly generate tokens
-		#first generate coding token
-		t = Token(0, self.topBoardLength)
-		x = random.randint(t.r, self.width) 
-		t.move(x, t.r)
-		self.tokens.append(t)
-
+	def generateExerciseToken(self):
+		#randomly generate an exercise token
 		#then generate exercise token
 		#TODO-need to check that they don't overlap
 		et = ExerciseToken(0, self.topBoardLength)
@@ -272,10 +294,18 @@ class CodeCardio(EventBasedAnimationClass):
 		et.move(ex, et.r)
 		self.tokens.append(et)
 
-		#then move them
+	def generateCodingToken(self):
+		#randomly generate a coding token
+		#first generate coding token
+		t = Token(0, self.topBoardLength)
+		x = random.randint(t.r, self.width) 
+		t.move(x, t.r)
+		self.tokens.append(t)
+
+	def moveTokens(self):
 		for token in self.tokens: 
 			if token.y <= self.height - token.r:
-				scale = 10
+				scale = 20
 				step = self.moveStep * scale
 				token.y += step
 			else: self.tokens.remove(token) #reaches bottom of screen: remove
@@ -283,20 +313,93 @@ class CodeCardio(EventBasedAnimationClass):
 	def initTopBoard(self):
 		self.canvas.create_rectangle(0,0,self.width, self.topBoardLength, fill="light cyan")
 
+	def onMousePressedWrapper(self, event):
+		self.onMousePressed(event)
+
+	def onMousePressed(self, event):
+		self.mousePX, self.mousePY = event.x, event.y
+
+	def mouseMotion(self, event):
+		canvas = event.widget
+		if self.startScreen:
+			self.mouseX = event.x
+			self.mouseY = event.y
+		self.redrawAll()
+
+	def drawStartScreen(self):
+		self.canvas.delete(ALL)
+		#draw
+		filepath = "startscreen.gif"
+		x,y = self.width/2, self.height/2
+		self.startScreenImage = PhotoImage(file=filepath)
+		self.canvas.create_image(x,y, image=self.startScreenImage)
+		y=self.height/3
+
+		#create welcome text
+		self.canvas.create_text(x,y, text="Welcome to",
+			font="Apple\ Chancery 80", fill="papaya whip")
+		y+=self.marginY*2
+		self.canvas.create_text(x,y, 
+			text="CODE CARDIO", font="Didot 60 bold", fill="papaya whip")
+		y+=self.marginY*2
+		rx = self.marginX*3
+		ry = self.marginY/2
+
+		#set default rectangular button width
+		width,outline = 1,"black"
+		highlight = "cyan"
+
+		#create first button
+		if self.mouseX >= x-rx and self.mouseX <= x+rx and self.mouseY >= y-ry and self.mouseY <= y+ry:
+			outline,width=highlight,4
+		elif self.mousePX >= x-rx and self.mousePX <= x+rx and self.mousePY >= y-ry and self.mousePY <= y+ry:
+			print "start screen"
+			self.startScreen = False
+		#else:
+
+		self.canvas.create_rectangle(x-rx, y-ry, x+rx, y+ry, fill="blanched almond",
+			outline=outline,width=width)
+		self.canvas.create_text(x,y, text="Enter the magical world of 15-112",
+			font="Didot 20 bold", fill="blue")
+		y+=self.marginY+5
+
+		#create second button
+		width,outline = 1,"black"
+		if self.mouseX >= x-rx and self.mouseX <= x+rx and self.mouseY >= y-ry and self.mouseY <= y+ry:
+			outline,width=highlight,4
+		self.canvas.create_rectangle(x-rx, y-ry, x+rx, y+ry, fill="blanched almond",
+			outline=outline,width=width)
+		self.canvas.create_text(x,y, text="Instructions",
+			font="Didot 20 bold", fill="blue")
+		y+=self.marginY+5
+
+		#create third button
+		width,outline = 1,"black"
+		if self.mouseX >= x-rx and self.mouseX <= x+rx and self.mouseY >= y-ry and self.mouseY <= y+ry:
+			outline,width=highlight,4
+		self.canvas.create_rectangle(x-rx, y-ry, x+rx, y+ry, fill="blanched almond",
+			outline=outline, width=width)
+		self.canvas.create_text(x,y, text="Settings",
+			font="Didot 20 bold", fill="blue")
+
 	def redrawAll(self):
 		self.canvas.delete(ALL)
-		self.initTopBoard()
-		#set scene background
-		self.canvas.create_rectangle(0, self.topBoardLength, self.width, self.height, fill="gray10")
-		if not self.codingTokenHit and not self.exerciseTokenHit:
-			self.drawPlayers()
-			self.drawTokens()
+		if (self.startScreen==True):
+			self.drawStartScreen()
 		else:
-			self.drawCurrentExercise()
-		self.drawTitleGraphics()
+			self.initTopBoard()
+			#set scene background
+			self.canvas.create_rectangle(0, self.topBoardLength, self.width, self.height, fill="gray10")
+			if not self.codingTokenHit and not self.exerciseTokenHit:
+				self.drawPlayers()
+				self.drawTokens()
+			else:
+				self.drawCurrentExercise()
+			self.drawTitleGraphics()
 		
 	def onKeyPressed(self,event):
-		move = self.moveStep
+		scale = 20
+		move = self.moveStep * scale
 		if event.keysym == "Left": self.players[0].move(-1 * move, 0)
 		elif event.keysym == "Right": self.players[0].move(move, 0)
 		if self.codingTokenHit:
@@ -348,7 +451,7 @@ class ExerciseToken(Token):
 		self.color = "green"
 
 def playCodeCardio():
-	winWidth, winHeight = 1000, 1000
+	winWidth, winHeight = 1000, 700
 	c = CodeCardio(winWidth, winHeight)
 	c.run()
     #instantiate the first player
