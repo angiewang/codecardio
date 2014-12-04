@@ -10,7 +10,6 @@ class CodeCardio(EventBasedAnimationClass):
 	def __init__(self, winWidth=1000, winHeight=1000):
 		self.width = winWidth
 		self.height = winHeight
-		self.mainGame = False
 		self.timerDelay = 1
 		self.tokens = []
 		self.prevX, self.prevY = 500, 400
@@ -35,11 +34,18 @@ class CodeCardio(EventBasedAnimationClass):
 		self.directions = ""
 		#create a new thread 
 		self.thread = Thread(target = self.faceDetect, args=("haarcascade_frontalface_default.xml",))
-		self.mousePX, self.mousePY = 0,0
+		self.mousePX, self.mousePY =0,0
 		self.timerCounter = 0
 		self.movementThreshold = 10
 		self.arg = "haarcascade_frontalface_default.xml"
-		self.faceDetectFeature = True
+		self.numCorrect = 0
+		self.numIncorrect = 0
+
+	def initGameState(self):
+		self.faceDetectFeature = False
+		self.mainGame = False
+		self.instructionScreen = False
+		self.settingsScreen = False
 
 	def onWindowClosed(self):
 		self.video_capture.release()
@@ -47,6 +53,7 @@ class CodeCardio(EventBasedAnimationClass):
 		self.root.quit()
 
 	def initAnimation(self):
+		self.initGameState()
 		self.initStartScreen()
 		self.root.bind("<Motion>", lambda event: self.mouseMotion(event))
 		self.initTopics()
@@ -91,16 +98,17 @@ class CodeCardio(EventBasedAnimationClass):
 
 		# Draw a rectangle around the faces
 		for (x, y, w, h) in faces:
-		    #cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-		    print x, y
-		    scale = 100
-		    step = self.moveStep * scale
-		    if x < self.width/2:
-		    	print "move right",
-		    	self.players[0].x += step
-		    elif x > self.height/2:
-		    	print "move left",
-		    	self.players[0].x -= step
+			print faces
+			#cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+			print x, y
+			scale = 100
+			step = self.moveStep * scale
+			if x < self.width/2:
+				print "move right",
+				self.players[0].x += step
+			elif x > self.height/2:
+				print "move left",
+				self.players[0].x -= step
 
 		    # Display the resulting frame
 		   # cv2.imshow('Video', frame)
@@ -162,8 +170,9 @@ class CodeCardio(EventBasedAnimationClass):
 
 		numRepl = question.count("%d")
 
-		low,high = 1,5
-		self.generateRepl(low, high, numRepl, question)
+		if numRepl > 0:
+			low,high = 1,5
+			self.generateRepl(low, high, numRepl, question)
 
 		#run the exec file and return answer 
 		execFile = "questions/" + self.filelocs[self.currentTopic] + "_exec.py"
@@ -334,7 +343,7 @@ class CodeCardio(EventBasedAnimationClass):
 			self.tokens = []
 		
 	def onTimerFired(self):
-		if self.startScreen==False and self.codingTokenHit==False and self.exerciseTokenHit==False:
+		if self.mainGame==True and self.codingTokenHit==False and self.exerciseTokenHit==False:
 			self.checkForCollision() 
 			#self.timerDelay = 1000
 			if self.timerCounter >= 0:
@@ -427,9 +436,9 @@ class CodeCardio(EventBasedAnimationClass):
 		elif self.mousePX >= x-rx and self.mousePX <= x+rx and self.mousePY >= y-ry and self.mousePY <= y+ry:
 			print "start screen"
 			self.startScreen = False
+			self.mainGame = True
 			self.initFaceDetect()
 			self.root.protocol("WM_DELETE_WINDOW", lambda: self.onWindowClosed())
-		#else:
 
 		self.canvas.create_rectangle(x-rx, y-ry, x+rx, y+ry, fill="blanched almond",
 			outline=outline,width=width)
@@ -441,6 +450,10 @@ class CodeCardio(EventBasedAnimationClass):
 		width,outline = 1,"black"
 		if self.mouseX >= x-rx and self.mouseX <= x+rx and self.mouseY >= y-ry and self.mouseY <= y+ry:
 			outline,width=highlight,4
+		elif self.mousePX >= x-rx and self.mousePX <= x+rx and self.mousePY >= y-ry and self.mousePY <= y+ry:
+			print "instructions"
+			self.startScreen = False
+			self.instructionScreen = True
 		self.canvas.create_rectangle(x-rx, y-ry, x+rx, y+ry, fill="blanched almond",
 			outline=outline,width=width)
 		self.canvas.create_text(x,y, text="Instructions",
@@ -451,16 +464,25 @@ class CodeCardio(EventBasedAnimationClass):
 		width,outline = 1,"black"
 		if self.mouseX >= x-rx and self.mouseX <= x+rx and self.mouseY >= y-ry and self.mouseY <= y+ry:
 			outline,width=highlight,4
+		elif self.mousePX >= x-rx and self.mousePX <= x+rx and self.mousePY >= y-ry and self.mousePY <= y+ry:
+			print "settings"
+			self.startScreen = False
+			self.settingsScreen = True
 		self.canvas.create_rectangle(x-rx, y-ry, x+rx, y+ry, fill="blanched almond",
 			outline=outline, width=width)
 		self.canvas.create_text(x,y, text="Settings",
 			font="Didot 20 bold", fill="blue")
 
+	def drawInstructionsScreen(self): pass
+		#self.mainGameBackground
+
+	def drawSettingsScreen(self): pass
+
 	def redrawAll(self):
 		self.canvas.delete(ALL)
-		if (self.startScreen==True):
+		if self.startScreen==True:
 			self.drawStartScreen()
-		else:
+		elif self.mainGame == True:
 			self.initTopBoard()
 			#set scene background
 			self.canvas.create_rectangle(0, self.topBoardLength, self.width, self.height, fill="gray10")
@@ -470,6 +492,10 @@ class CodeCardio(EventBasedAnimationClass):
 			else:
 				self.drawCurrentExercise()
 			self.drawTitleGraphics()
+		elif self.instructionScreen:
+			self.drawInstructionsScreen()
+		elif self.settingsScreen:
+			self.drawSettingsScreen()
 		
 	def onKeyPressed(self,event):
 		scale = 100
@@ -498,6 +524,9 @@ class CodeCardio(EventBasedAnimationClass):
 			displayText = "YOU HIT AN EXERCISE TOKEN"
 		self.canvas.create_text(self.width/2, self.topBoardLength/2,
 				text=displayText, font="Andale\ Mono 60 bold")
+
+	# def drawProgressBar(self):
+	# 	if self.mainGame:
 
 class Character(object):
 	def __init__(self, x, y):
