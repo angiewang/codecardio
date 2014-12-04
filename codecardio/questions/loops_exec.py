@@ -9,4 +9,4 @@ def f(x,y):
             result = 2
         print (z if (z%3 == 2) else 3),
     print result
-f(3, 4)
+f(3, 1)

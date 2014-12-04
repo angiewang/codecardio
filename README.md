@@ -6,3 +6,8 @@ Instructions to run:
 
 Go to the directory: /termproject/codecardio
 python codecardio.py
+
+OpenCV is used in this project, which can be downloaded here: http://opencv.org/
+
+Face detection algorithm uses Haar cascades, more info can be found here:
+http://docs.opencv.org/trunk/doc/py_tutorials/py_objdetect/py_face_detection/py_face_detection.html

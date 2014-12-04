@@ -1,12 +1,24 @@
 Hours spent:
-Friday - 1 hr
-Saturday - 3 hrs
-Sunday - 3 hrs
-Monday - 5 hrs 
-Tuesday - 4 hrs 
-Wednesday - 4 hrs
-Friday - 2 hrs
-Saturday - 2 hrs
-Sunday - 2 hrs
-Tuesday - 3 hrs
-Wednesday - 3 hrs
+11/7 Friday - 1 hr
+11/8 Saturday - 3 hrs
+11/9 Sunday - 3 hrs
+11/10 Monday - 5 hrs 
+11/11 Tuesday - 4 hrs 
+11/12 Wednesday - 4 hrs
+11/14 Friday - 2 hrs
+11/15 Saturday - 2 hrs
+11/16 Sunday - 2 hrs 
+11/18 Tuesday - 3 hrs
+11/19 Wednesday - 3 hrs
+11/20 Thursday - 2 hrs
+11/21 Friday 2 hrs
+11/22 Saturday 1 hr
+11/23 Sunday 3 hrs
+11/24 Monday 2 hrs
+11/25 Tuesday 3 hrs
+11/27 Friday 3 hrs
+11/28 Saturday 3 hrs
+11/29 Sunday 5 hrs
+12/1 Monday 5 hrs
+12/2 Tuesday 5 hrs
+12/3 Wednesday 5 hrs

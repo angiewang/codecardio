@@ -34,12 +34,15 @@ class CodeCardio(EventBasedAnimationClass):
 		self.directions = ""
 		#create a new thread 
 		self.thread = Thread(target = self.faceDetect, args=("haarcascade_frontalface_default.xml",))
-		self.mousePX, self.mousePY =0,0
-		self.timerCounter = 0
 		self.movementThreshold = 10
 		self.arg = "haarcascade_frontalface_default.xml"
+		
+		self.mousePX, self.mousePY =0,0
+		self.timerCounter = 0
 		self.numCorrect = 0
 		self.numIncorrect = 0
+		self.mainGameBackground = "main_background.gif"
+		self.otherBackground = "other_background.gif"
 
 	def initGameState(self):
 		self.faceDetectFeature = False
@@ -49,7 +52,6 @@ class CodeCardio(EventBasedAnimationClass):
 
 	def onWindowClosed(self):
 		self.video_capture.release()
-		#cv2.destroyAllWindows()
 		self.root.quit()
 
 	def initAnimation(self):
@@ -72,18 +74,6 @@ class CodeCardio(EventBasedAnimationClass):
 	def faceDetect(self,arg):
 		#the code for face detection is from 
 		#https://realpython.com/blog/python/face-detection-in-python-using-a-webcam/
-		#cascPath = sys.argv[1]
-
-		#moved to init
-		# cascPath = arg
-		# faceCascade = cv2.CascadeClassifier(cascPath)
-		# video_capture = cv2.VideoCapture(0)
-
-		#face detection code from website
-		#https://realpython.com/blog/python/face-detection-in-python-using-a-webcam/
-		#while True:
-		    
-	    # Capture frame-by-frame
 		ret, frame = self.video_capture.read()
 
 		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -109,16 +99,6 @@ class CodeCardio(EventBasedAnimationClass):
 			elif x > self.height/2:
 				print "move left",
 				self.players[0].x -= step
-
-		    # Display the resulting frame
-		   # cv2.imshow('Video', frame)
-
-		    # if cv2.waitKey(1) & 0xFF == ord('q'):
-		    #     break
-
-		# When everything is done, release the capture
-		#video_capture.release()
-		#cv2.destroyAllWindows()
 
 	#when collision occurs, generate random question 
 	def checkForCollision(self):
@@ -275,11 +255,6 @@ class CodeCardio(EventBasedAnimationClass):
 		"functionsredux","fileio"]
 		#todo - count number of replacements in template
 
-	def gameIsOver(self): 
-		if self.currentTopic == len(self.topics):
-			self.create_text(self.width/2, self.height/2, 
-				text-"CONGRATS, game is complete")
-
 	#generates the workout when exercise token is hit
 	def generateExercise(self):
 		numberOfExercises = [5, 10, 20]
@@ -359,12 +334,26 @@ class CodeCardio(EventBasedAnimationClass):
 	def drawPlayers(self): 
 		for player in self.players:
 			self.canvas.create_oval(player.x-player.r, player.y-player.r, 
-				player.x+player.r, player.y+player.r, fill=player.color)
+				player.x+player.r, player.y+player.r, fill="white")
+			filepathP = "megacat.gif"
+			px,py = player.x, player.y
+			self.startScreenImage = PhotoImage(file=filepathP)
+			self.canvas.create_image(px,py, image=self.startScreenImage)
 
 	def drawTokens(self):
+		filepathCT = "dkosbie.gif"
+		self.startScreenImageCT = PhotoImage(file=filepathCT)
+		filepathET = "exercise_octocat.gif"
+		self.startScreenImageET = PhotoImage(file=filepathET)
+
 		for token in self.tokens:
 			self.canvas.create_rectangle(token.x-token.r, token.y-token.r, 
-				token.x+token.r, token.y+token.r, fill=token.color)
+				token.x+token.r, token.y+token.r)
+			tx, ty = token.x, token.y
+			if type(token)==Token:
+				self.canvas.create_image(tx,ty, image=self.startScreenImageCT)
+			elif type(token)==ExerciseToken:
+				self.canvas.create_image(tx, ty, image=self.startScreenImageET)
 
 	def generateExerciseToken(self):
 		#randomly generate an exercise token
@@ -392,7 +381,7 @@ class CodeCardio(EventBasedAnimationClass):
 			else: self.tokens.remove(token) #reaches bottom of screen: remove
 
 	def initTopBoard(self):
-		self.canvas.create_rectangle(0,0,self.width, self.topBoardLength, fill="light cyan")
+		self.canvas.create_rectangle(0,0,self.width, self.topBoardLength, fill="black")
 
 	def onMousePressedWrapper(self, event):
 		self.onMousePressed(event)
@@ -402,9 +391,9 @@ class CodeCardio(EventBasedAnimationClass):
 
 	def mouseMotion(self, event):
 		canvas = event.widget
-		if self.startScreen:
-			self.mouseX = event.x
-			self.mouseY = event.y
+		#if self.startScreen or self.instructionScreen or self.settingsScreen or self.gameIsComplete:
+		self.mouseX = event.x
+		self.mouseY = event.y
 		self.redrawAll()
 
 	def drawStartScreen(self):
@@ -473,29 +462,91 @@ class CodeCardio(EventBasedAnimationClass):
 		self.canvas.create_text(x,y, text="Settings",
 			font="Didot 20 bold", fill="blue")
 
-	def drawInstructionsScreen(self): pass
-		#self.mainGameBackground
+	def drawInstructionsScreen(self):
+		filepath = self.otherBackground
+		x,y = self.width/2, self.height/2
+		self.startScreenImage = PhotoImage(file=filepath)
+		self.canvas.create_image(x,y, image=self.startScreenImage)
+
+	def drawPauseButton(self):
+		x,y = self.topBoardLength, self.topBoardLength/2
+		self.canvas.create_rectangle(0,0,x,y, 
+			fill="navy",outline="white")
+		self.canvas.create_text(x/2,y/2,text="Pause game", font="Didot 20 bold",fill="white")
 
 	def drawSettingsScreen(self): pass
+
+	def drawCompletedGame(self):
+		filepath = self.otherBackground
+		x,y = self.width/2, self.height/2
+		self.startScreenImage = PhotoImage(file=filepath)
+		self.canvas.create_image(x,y, image=self.startScreenImage)
+		y = self.topBoardLength
+		self.canvas.create_text(x,y, font="Apple\ Chancery 50 bold",
+			text="Congratulations!", fill="peach puff")
+		y += self.marginY*2
+		self.canvas.create_text(x, y, font="Didot 40 bold",
+			text="You have completed the Code Cardio game.",
+			fill="light cyan")
+		y += self.marginY*2
+		rx = 150
+		ry = 30
+		outline = "black"
+		width = 1
+		highlight = "blanched almond"
+		if self.mouseX >= x-rx and self.mouseX <= x+rx and self.mouseY >= y-ry and self.mouseY <= y+ry:
+			outline,width = highlight, 10
+		elif self.mousePX >= x-rx and self.mousePX <= x+rx and self.mousePY >= y-ry and self.mousePY <= y+ry:
+			self.mainGame = True
+			self.gameIsComplete = False
+			self.initAnimation()
+			self.reset()
+		
+		self.canvas.create_rectangle(x-rx, y-ry, x+rx, y+ry, fill="blanched almond",
+			outline=outline,width=width)
+		self.canvas.create_text(x, y, text="RETURN TO HOME", font="Didot 30")
+
+	def reset(self):
+		self.tokens = []
+		resetX, resetY = 500, 400
+		for p in self.players:
+			p.x, p.y = resetX, resetY
+		self.mousePX, self.mousePY =0,0
+		self.timerCounter = 0
+		self.numCorrect = 0
+		self.numIncorrect = 0
+		self.currentTopic = 0
 
 	def redrawAll(self):
 		self.canvas.delete(ALL)
 		if self.startScreen==True:
 			self.drawStartScreen()
 		elif self.mainGame == True:
-			self.initTopBoard()
-			#set scene background
-			self.canvas.create_rectangle(0, self.topBoardLength, self.width, self.height, fill="gray10")
-			if not self.codingTokenHit and not self.exerciseTokenHit:
-				self.drawPlayers()
-				self.drawTokens()
-			else:
-				self.drawCurrentExercise()
-			self.drawTitleGraphics()
+			self.drawMainGame()
+			#if not self.exerciseTokenHit and not self.codingTokenHit:
+				#draw relevant buttons
+				#self.drawPauseButton()
 		elif self.instructionScreen:
 			self.drawInstructionsScreen()
 		elif self.settingsScreen:
 			self.drawSettingsScreen()
+		elif self.gameIsComplete:
+			self.drawCompletedGame()
+
+	def drawMainGame(self):
+		self.initTopBoard()
+		#set scene background
+		#self.canvas.create_rectangle(0, self.topBoardLength, self.width, self.height, fill="gray10")
+		filepathBG = self.mainGameBackground
+		x,y = self.width/2, self.height/2 + self.topBoardLength/2
+		self.startScreenImageBG = PhotoImage(file=filepathBG)
+		self.canvas.create_image(x,y, image=self.startScreenImageBG)
+		if not self.codingTokenHit and not self.exerciseTokenHit:
+			self.drawPlayers()
+			self.drawTokens()
+		else:
+			self.drawCurrentExercise()
+		self.drawTitleGraphics()
 		
 	def onKeyPressed(self,event):
 		scale = 100
@@ -507,6 +558,9 @@ class CodeCardio(EventBasedAnimationClass):
 			self.answerQuestion(event)
 		elif self.exerciseTokenHit:
 			self.exerciseResponse(event)
+		if self.mainGame and event.char == "g":
+			self.gameIsComplete = True
+			self.mainGame = False
 		else: self.redrawAll()
 
 	def drawTitleGraphics(self):
@@ -514,7 +568,7 @@ class CodeCardio(EventBasedAnimationClass):
 			displayText = "CODE CARDIO"
 			self.directions = "Dodge the falling tokens"
 			self.canvas.create_text(self.width/2, self.topBoardLength/2+self.marginY,
-			text=self.directions, font="Didot 25")
+			text=self.directions, font="Didot 25", fill="white")
 		elif self.codingTokenHit == True:
 			displayText = "YOU HIT A CODING TOKEN"
 			title = "Current topic: " + self.topics[self.currentTopic]
@@ -523,7 +577,7 @@ class CodeCardio(EventBasedAnimationClass):
 		elif self.exerciseTokenHit == True:
 			displayText = "YOU HIT AN EXERCISE TOKEN"
 		self.canvas.create_text(self.width/2, self.topBoardLength/2,
-				text=displayText, font="Andale\ Mono 60 bold")
+				text=displayText, font="Andale\ Mono 60 bold",fill="white")
 
 	# def drawProgressBar(self):
 	# 	if self.mainGame:
