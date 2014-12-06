@@ -49,7 +49,7 @@ class CodeCardio(EventBasedAnimationClass):
 		self.faceDetectFeature = False
 		self.mainGame = False
 		self.instructionScreen = False
-		self.settingsScreen = False
+		self.aboutScreen = False
 
 	def onWindowClosed(self):
 		self.video_capture.release()
@@ -118,8 +118,6 @@ class CodeCardio(EventBasedAnimationClass):
 				else:
 					self.exerciseTokenHit = True
 					self.generateExercise()
-
-	def testCheckForCollision(): pass
 
 	def readFile(self, filename, mode="rt"):
 		with open(filename, mode) as fin:
@@ -214,8 +212,6 @@ class CodeCardio(EventBasedAnimationClass):
 		# if (os.path.exists(fileLoc)):
 		# 	self.readFile()
 
-	def genRandomQuestion(self): pass
-
 	def generateMCAnswers(self, answer):
 		#create list of answers and shuffle them
 		self.correctAnswer = answer
@@ -273,7 +269,7 @@ class CodeCardio(EventBasedAnimationClass):
 				self.questionInstructions+= "\nCode tracing: indicate what this program will print"
 			self.canvas.create_text(x, self.topBoardLength*3/4, 
 				text=self.questionInstructions, 
-			font="Helvetica 20 bold")
+			font="Helvetica 20 bold", fill="white")
 			self.canvas.create_rectangle(0+margin, self.topBoardLength+margin, 
 				self.width-margin, self.height-margin, fill="white")
 
@@ -393,7 +389,6 @@ class CodeCardio(EventBasedAnimationClass):
 
 	def mouseMotion(self, event):
 		canvas = event.widget
-		#if self.startScreen or self.instructionScreen or self.settingsScreen or self.gameIsComplete:
 		self.mouseX = event.x
 		self.mouseY = event.y
 		self.redrawAll()
@@ -456,12 +451,12 @@ class CodeCardio(EventBasedAnimationClass):
 		if self.mouseX >= x-rx and self.mouseX <= x+rx and self.mouseY >= y-ry and self.mouseY <= y+ry:
 			outline,width=highlight,4
 		elif self.mousePX >= x-rx and self.mousePX <= x+rx and self.mousePY >= y-ry and self.mousePY <= y+ry:
-			print "settings"
+			print "about"
 			self.startScreen = False
-			self.settingsScreen = True
+			self.aboutScreen = True
 		self.canvas.create_rectangle(x-rx, y-ry, x+rx, y+ry, fill="blanched almond",
 			outline=outline, width=width)
-		self.canvas.create_text(x,y, text="Settings",
+		self.canvas.create_text(x,y, text="About",
 			font="Didot 20 bold", fill="blue")
 
 	def drawInstructionsScreen(self):
@@ -469,6 +464,36 @@ class CodeCardio(EventBasedAnimationClass):
 		x,y = self.width/2, self.height/2
 		self.startScreenImage = PhotoImage(file=filepath)
 		self.canvas.create_image(x,y, image=self.startScreenImage)
+		x,y = self.width/2, self.topBoardLength
+		font = "Palatino 25"
+		color = "white"
+		margin = self.marginY/2
+		self.canvas.create_text(x,y,
+			text="Basic Gameplay:",font="Palatino 25 bold",fill=color)
+		y += margin
+		self.canvas.create_text(x,y, 
+			text="Dodge the falling tokens by pressing arrow keys.",
+			font=font,fill=color)
+		y += margin
+		self.canvas.create_text(x,y,text="Controls:",font="Palatino 25 bold", 
+			fill=color)
+		y += margin
+		self.canvas.create_text(x,y, 
+			text="Press F to enter face detection mode,",
+			font=font,fill=color)
+		y += margin
+		self.canvas.create_text(x,y,
+			text="Then use face movements to determine character movements",
+			font=font,fill=color)
+		y += margin
+		self.canvas.create_text(x,y,
+			text="Press H to return home", font=font, fill=color)
+		y += margin
+		self.canvas.create_text(x,y,
+			text="Press I to enter instructions screen",font=font,fill=color)
+		y += margin
+		self.canvas.create_text(x,y,
+			text="Press P to pause the game",font=font,fill=color)
 
 	def drawPauseButton(self):
 		x,y = self.topBoardLength, self.topBoardLength/2
@@ -476,7 +501,21 @@ class CodeCardio(EventBasedAnimationClass):
 			fill="navy",outline="white")
 		self.canvas.create_text(x/2,y/2,text="Pause game", font="Didot 20 bold",fill="white")
 
-	def drawSettingsScreen(self): pass
+	def drawAboutScreen(self):
+		x,y = self.width/2, self.topBoardLength
+		color="black"
+		self.canvas.create_rectangle(0,0,self.width,self.height,fill=color)
+		txt="This is Angie Wang's term project for 15-112."
+		font="Didot 30"
+		color = "white"
+		margin = self.marginY
+		self.canvas.create_text(x,y,text=txt, font=font, fill=color)
+		y += self.marginY
+		txt="See www.github.com/angiewang/codecardio for source code"
+		self.canvas.create_text(x,y,text=txt,font=font,fill=color)
+		y += self.marginY
+		txt="Contact angiewang@cmu.edu for questions or suggestions"
+		self.canvas.create_text(x,y,text=txt,font=font,fill=color)
 
 	def drawCompletedGame(self):
 		filepath = self.otherBackground
@@ -525,13 +564,10 @@ class CodeCardio(EventBasedAnimationClass):
 			self.drawStartScreen()
 		elif self.mainGame == True:
 			self.drawMainGame()
-			#if not self.exerciseTokenHit and not self.codingTokenHit:
-				#draw relevant buttons
-				#self.drawPauseButton()
 		elif self.instructionScreen:
 			self.drawInstructionsScreen()
-		elif self.settingsScreen:
-			self.drawSettingsScreen()
+		elif self.aboutScreen:
+			self.drawAboutScreen()
 		elif self.gameIsComplete:
 			self.drawCompletedGame()
 
@@ -570,6 +606,12 @@ class CodeCardio(EventBasedAnimationClass):
 				if self.faceDetectFeature:
 					self.faceDetectFeature = False
 				else: self.faceDetectFeature = True
+		#if not self.startScreen:
+		if event.char == "h":
+			self.startScreen = True
+			self.mainGame = False
+			self.instructionScreen = False
+			self.aboutScreen = False
 		else: self.redrawAll()
 
 	def drawTitleGraphics(self):
