@@ -7,6 +7,6 @@ def f(x,y):
             m += 1
         elif (y + z > x):
             result = 2
-        print (z if (z%%3 == 2) else 3),
+        result = z if (z%3 == 2) else 3
     print result
 f(%d, %d)

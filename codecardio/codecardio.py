@@ -36,6 +36,7 @@ class CodeCardio(EventBasedAnimationClass):
 		self.thread = Thread(target = self.faceDetect, args=("haarcascade_frontalface_default.xml",))
 		self.movementThreshold = 10
 		self.arg = "haarcascade_frontalface_default.xml"
+		self.pauseGame = False
 		
 		self.mousePX, self.mousePY =0,0
 		self.timerCounter = 0
@@ -117,7 +118,6 @@ class CodeCardio(EventBasedAnimationClass):
 				else:
 					self.exerciseTokenHit = True
 					self.generateExercise()
-		#todo - while question is incorrect, keep trying
 
 	def testCheckForCollision(): pass
 
@@ -325,9 +325,11 @@ class CodeCardio(EventBasedAnimationClass):
 				self.timerCounter -= 1
 			else:
 				self.timerCounter = 20
-				self.generateCodingToken()
-				self.generateExerciseToken()
-			self.moveTokens()
+				if not self.pauseGame:
+					self.generateCodingToken()
+					self.generateExerciseToken()
+			if not self.pauseGame:
+				self.moveTokens()
 			if self.faceDetectFeature:
 				self.faceDetect("haarcascade_frontalface_default")
 
@@ -558,9 +560,16 @@ class CodeCardio(EventBasedAnimationClass):
 			self.answerQuestion(event)
 		elif self.exerciseTokenHit:
 			self.exerciseResponse(event)
-		if self.mainGame and event.char == "g":
-			self.gameIsComplete = True
-			self.mainGame = False
+		if self.mainGame:
+			if event.char == "g":
+				self.gameIsComplete = True
+				self.mainGame = False
+			if self.mainGame and event.char == "p":
+				self.pauseGame=True
+			if self.mainGame and event.char == "f":
+				if self.faceDetectFeature:
+					self.faceDetectFeature = False
+				else: self.faceDetectFeature = True
 		else: self.redrawAll()
 
 	def drawTitleGraphics(self):

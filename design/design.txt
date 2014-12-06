@@ -1,0 +1,6 @@
+The user experience consists of moving the arrow keys or moving the 
+user's face in various directions. The design is oriented around the 
+theme of forcing the user to do physical exercise. This is done by the face
+detection feature which moves the character based on the movement of the 
+user's face. This design decision was made to create a fun user experience 
+and provide a unique way to interact with the game pieces.
